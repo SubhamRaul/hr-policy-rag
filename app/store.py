@@ -9,12 +9,12 @@ from .config import get_settings
 from .ingestion import Chunk
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_embedding_model() -> SentenceTransformer:
     return SentenceTransformer(get_settings().embedding_model)
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_collection():
     settings = get_settings()
     client = chromadb.PersistentClient(path=settings.chroma_dir)
