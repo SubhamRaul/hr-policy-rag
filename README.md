@@ -9,7 +9,7 @@ A small, grounded Retrieval-Augmented Generation (RAG) service for answering emp
 - Local embeddings using `sentence-transformers`.
 - Persistent vector search with ChromaDB.
 - Hybrid retrieval using semantic similarity and keyword overlap.
-- Grounded Gemini responses with citations.
+- Grounded Gemini responses with local Ollama fallback and citations.
 - Safe refusal when the answer is not found in the policies.
 - FastAPI backend with a simple Streamlit UI.
 
@@ -40,18 +40,26 @@ A small, grounded Retrieval-Augmented Generation (RAG) service for answering emp
                        Hybrid retrieval
                        semantic + keyword
                              │
-                      confidence gate
-                       ┌─────┴─────┐
-                    weak          strong
-                     │              │
-                     ▼              ▼
-                  REFUSE       Gemini JSON
-                               grounded only
-                                   │
-                             citation validator
-                                   │
-                                   ▼
-                              JSON response
+                                           confidence gate
+                      ┌─────┴─────┐
+                    weak        strong
+                     │             │
+                     ▼             ▼
+                   REFUSE     Grounded LLM
+                                     │
+                              ┌──────┴──────┐
+                              │             │
+                           Gemini        Ollama
+                           primary       fallback
+                              │             │
+                              └──────┬──────┘
+                                     │
+                              Pydantic JSON
+                                     │
+                              citation validator
+                                     │
+                                     ▼
+                                JSON response
 ```
 
 ## Stack
@@ -61,11 +69,12 @@ A small, grounded Retrieval-Augmented Generation (RAG) service for answering emp
 - Streamlit
 - ChromaDB
 - `sentence-transformers` (`all-MiniLM-L6-v2`) for local embeddings
-- Google Gemini API for the final answer
+- Google Gemini API as the primary LLM
+- Ollama as the local fallback LLM
 - Pydantic for structured output
 - PyPDF for PDF text extraction
 
-The default LLM is `gemini-3.5-flash`. Embeddings are local, so no embedding API key is required.
+The default LLM is Gemini. If Gemini is unavailable because of quota, API, or connection errors, the application falls back to a local Ollama model.
 
 ## 1. Setup
 
@@ -76,6 +85,8 @@ pip install -r requirements.txt
 ```
 
 Copy `.env.example` to `.env` and add your Gemini key.
+
+Install and run Ollama locally, then pull the fallback model configured in your environment variables.
 
 ## 2. Start the API
 
@@ -133,8 +144,10 @@ Unknown questions return a safe refusal instead of a general-knowledge answer.
 
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
-| `GEMINI_API_KEY` | Yes for answering | — | Gemini API key |
-| `LLM_MODEL` | No | `gemini-2.5-flash-lite` | Final answer model |
+| `GEMINI_API_KEY` | Yes for Gemini | — | Gemini API key |
+| `LLM_MODEL` | No | `gemini-2.5-flash-lite` | Primary Gemini model |
+| `OLLAMA_BASE_URL` | No | `http://localhost:11434` | Local Ollama server URL |
+| `OLLAMA_MODEL` | No | `llama3.2` | Local fallback model |
 | `EMBEDDING_MODEL` | No | `sentence-transformers/all-MiniLM-L6-v2` | Local embedding model |
 | `CHROMA_DIR` | No | `.chroma` | Persistent vector store |
 | `COLLECTION_NAME` | No | `hr_policies` | Chroma collection |
@@ -144,7 +157,3 @@ Unknown questions return a safe refusal instead of a general-knowledge answer.
 | `MIN_HYBRID_SCORE` | No | `0.28` | Combined retrieval threshold |
 | `MAX_UPLOAD_MB` | No | `10` | Upload size limit |
 
-
-## Known limitation
-
-PDFs are processed using PyPDF text extraction. Scanned PDFs and complex tables may not be extracted correctly.
