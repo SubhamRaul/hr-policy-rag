@@ -11,3 +11,4 @@ streamlit>=1.45,<2
 requests>=2.32,<3
 python-dotenv>=1.0,<2
 pytest>=8.0,<9
+ollama

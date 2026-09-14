@@ -3,7 +3,7 @@ import os
 import requests
 import streamlit as st
 
-API_URL = os.getenv("API_URL", "https://hr-policy-rag-five.vercel.app/")
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.set_page_config(page_title="HR Policy Assistant", page_icon="📚")
 
