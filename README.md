@@ -11,6 +11,7 @@ A small, grounded Retrieval-Augmented Generation (RAG) service for answering emp
 - Hybrid retrieval using semantic similarity and keyword overlap.
 - Grounded Gemini responses with local Ollama fallback and citations.
 - Safe refusal when the answer is not found in the policies.
+- Admin endpoint to clear all indexed policy chunks.
 - FastAPI backend with a simple Streamlit UI.
 
 ## Architecture
@@ -35,12 +36,18 @@ A small, grounded Retrieval-Augmented Generation (RAG) service for answering emp
                     │ ChromaDB         │
                     │ persistent       │
                     └────────┬─────────┘
+                             │
+                  ┌──────────┴──────────┐
+                  │                     │
+             Upload / Upsert       Clear all policies
+                  │                     │
+                  └──────────┬──────────┘
                              │ top-k
                              ▼
                        Hybrid retrieval
-                       semantic + keyword
+                      (semantic + keyword)
                              │
-                                           confidence gate
+                      confidence gate
                       ┌─────┴─────┐
                     weak        strong
                      │             │
@@ -137,6 +144,20 @@ Example response:
   "reason": null
 }
 ```
+Clear indexed policies:
+
+```bash
+curl -X DELETE "http://127.0.0.1:8000/admin/clear"
+```
+
+Example response:
+
+```json
+{
+  "message": "All indexed policy chunks have been cleared.",
+  "indexed_chunks": 0
+}
+```
 
 Unknown questions return a safe refusal instead of a general-knowledge answer.
 
@@ -145,9 +166,9 @@ Unknown questions return a safe refusal instead of a general-knowledge answer.
 | Variable | Required | Default | Purpose |
 |---|---|---|---|
 | `GEMINI_API_KEY` | Yes for Gemini | — | Gemini API key |
-| `LLM_MODEL` | No | `gemini-2.5-flash-lite` | Primary Gemini model |
+| `LLM_MODEL` | No | `gemini-3.5-flash` | Primary Gemini model |
 | `OLLAMA_BASE_URL` | No | `http://localhost:11434` | Local Ollama server URL |
-| `OLLAMA_MODEL` | No | `llama3.2` | Local fallback model |
+| `OLLAMA_MODEL` | No | `llama3.2:3b` | Local fallback model |
 | `EMBEDDING_MODEL` | No | `sentence-transformers/all-MiniLM-L6-v2` | Local embedding model |
 | `CHROMA_DIR` | No | `.chroma` | Persistent vector store |
 | `COLLECTION_NAME` | No | `hr_policies` | Chroma collection |

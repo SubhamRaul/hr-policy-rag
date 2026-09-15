@@ -12,6 +12,7 @@ st.caption("Answers are generated only from policies indexed by the backend.")
 
 with st.sidebar:
     st.header("Admin")
+
     uploaded = st.file_uploader(
         "Upload a policy",
         type=["md", "txt", "pdf"],
@@ -31,6 +32,7 @@ with st.sidebar:
                 },
                 timeout=120,
             )
+
             if response.ok:
                 payload = response.json()
                 st.success(
@@ -39,6 +41,38 @@ with st.sidebar:
                 )
             else:
                 st.error(response.json().get("detail", response.text))
+
+        except requests.RequestException as exc:
+            st.error(f"Backend unavailable: {exc}")
+
+    st.divider()
+
+    st.subheader("Manage indexed policies")
+
+    confirm_clear = st.checkbox(
+        "I understand this will delete all indexed policies."
+    )
+
+    if st.button(
+        "Clear all indexed policies",
+        disabled=not confirm_clear,
+    ):
+        try:
+            response = requests.delete(
+                f"{API_URL}/admin/clear",
+                timeout=30,
+            )
+
+            if response.ok:
+                payload = response.json()
+                st.success(payload["message"])
+                st.info(
+                    f"Remaining indexed chunks: "
+                    f"{payload['indexed_chunks']}"
+                )
+            else:
+                st.error(response.json().get("detail", response.text))
+
         except requests.RequestException as exc:
             st.error(f"Backend unavailable: {exc}")
 

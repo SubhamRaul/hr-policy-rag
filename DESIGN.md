@@ -26,6 +26,8 @@ UPLOAD
              ▼
        PERSISTENT CHROMA
              │
+             ├── Upload / Upsert
+             ├── Clear all indexed policies
              │
 QUERY ───────┘
   │
@@ -63,10 +65,10 @@ Pydantic structured JSON
 - `app/config.py`: stores the application settings, such as API keys, model names, etc.
 - `app/ingestion.py`: parsing and chunking.
 - `app/models.py`: Pydantic models define the expected request and response structures.
-- `app/store.py`: Chroma persistence and embedding model.
+- `app/store.py`: Manages the embedding model, persistent ChromaDB collection, chunk storage, retrieval queries, and collection clearing.
 - `app/retrieval.py`: hybrid retrieval and confidence gate.
 - `app/llm.py`: grounded LLM generation using Gemini with local Ollama fallback and structured output.
-- `app/main.py`: API contract and orchestration.
+- `app/main.py`: Handles API endpoints, file uploads, policy indexing, querying, and collection management.
 - `ui/streamlit_app.py`: user interface.
 
 ## 2. Chunking and retrieval
@@ -220,6 +222,17 @@ Unknown response:
 
 Returns service/index status.
 
+### `DELETE /admin/clear`
+
+Clears all indexed policy chunks from the ChromaDB collection.
+
+```json
+{
+  "message": "All indexed policy chunks have been cleared.",
+  "indexed_chunks": 0
+}
+```
+
 ## 5. Trade-offs
 
 ### Local embeddings vs hosted embeddings
@@ -236,7 +249,7 @@ The main disadvantage is that the model needs to be downloaded and uses local CP
 
 The system combines semantic similarity with simple lexical matching.
 
-Semantic search helps when the question uses different words from the policy. Lexical matching helps when the question contains exact terms such as policy names, clause numbers, or benefit names.
+Semantic search helps when the question uses different words from the policy. Lexical matching helps when the question contains exact terms such as policy names or benefit names.
 
 
 ### Section-aware chunking vs fixed-size chunking
@@ -261,9 +274,9 @@ This improves safety, but strict thresholds may sometimes reject a question that
 
 If I had two more weeks, I would focus on testing the current system and improving the areas that may cause incorrect answers.
 
-1. **Create an evaluation dataset** I would prepare 30–100 questions covering direct questions, paraphrased questions, table-based questions, multi-part questions, and questions whose answers are not present in the policies.
+1. **Retrieval Evaluation & Weight Optimization** I would use a dataset to validate the semantic similarity and lexical overlap weights, and tune the hybrid retrieval score and confidence thresholds based on results.
 
-2. **Improve document management** I would add support for replacing or deleting old policy documents. This would prevent outdated policy chunks from remaining in the vector database.
+2. **Improve document management** I would add support for replacing, updating, and deleting individual policy documents. When a policy is replaced or deleted, its previously indexed chunks should also be removed from ChromaDB
 
 3. **Improve multi-part question handling** I would test questions that contain more than one request and make sure each part receives relevant evidence.
 

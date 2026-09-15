@@ -11,7 +11,7 @@ from .ingestion import chunk_document, extract_text
 from .llm import answer_question, validate_llm_answer
 from .models import Citation, HealthResponse, QueryRequest, QueryResponse, UploadResponse
 from .retrieval import evidence_is_strong, retrieve
-from .store import collection_count, upsert_chunks
+from .store import collection_count, upsert_chunks , clear_collection
 
 
 app = FastAPI(
@@ -41,6 +41,19 @@ def safe_filename(name: str | None) -> str:
 def health() -> HealthResponse:
     return HealthResponse(status="ok", indexed_chunks=collection_count())
 
+@app.delete("/admin/clear")
+def clear_policies() -> dict:
+    try:
+        clear_collection()
+        return {
+            "message": "All indexed policy chunks have been cleared.",
+            "indexed_chunks": collection_count(),
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not clear policy collection: {exc}",
+        ) from exc
 
 @app.post("/admin/upload", response_model=UploadResponse)
 async def upload_policy(file: UploadFile = File(...)) -> UploadResponse:
