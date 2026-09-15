@@ -46,10 +46,6 @@ def get_client():
 
 
 def generate_with_ollama(prompt: str) -> LLMAnswer:
-    """
-    Generate a grounded response using the local Ollama model.
-    """
-
     response = ollama.chat(
         model=OLLAMA_MODEL,
         messages=[
@@ -82,9 +78,6 @@ def generate_with_ollama(prompt: str) -> LLMAnswer:
 
 
 def generate_with_gemini(prompt: str) -> LLMAnswer:
-    """
-    Generate a grounded response using Gemini.
-    """
 
     settings = get_settings()
     client = get_client()
@@ -110,12 +103,6 @@ def answer_question(
     question: str,
     results: list[RetrievedChunk],
 ) -> LLMAnswer:
-    """
-    Generate an answer using Gemini first.
-
-    If Gemini fails and Ollama fallback is enabled,
-    try the local Ollama model.
-    """
 
     if not results:
         return LLMAnswer(
